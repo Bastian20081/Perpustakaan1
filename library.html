@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sistem Perpustakaan</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --pink: #e7b2b2;
+  --purple: #b9b7e3;
+  --yellow: #e6e68f;
+  --green: #b9e49a;
+  --blue: #67b3d8;
+  --primary: #2d89ef;
+  --success: #2ecc71;
+  --danger: #e74c3c;
+  --dark: #1e272e;
+}
+* { margin:0; padding:0; box-sizing:border-box; font-family:'Poppins',sans-serif;}
+body { background:#f4f6fb; padding:10px;}
+.container { max-width:1400px; margin:auto; background:white; border-radius:15px; overflow:hidden; box-shadow:0 15px 40px rgba(0,0,0,0.15);}
+.top { display:grid; grid-template-columns:1fr 1fr 1.5fr;}
+.section { padding:20px; }
+.left { background:var(--pink);}
+.middle { background:var(--purple);}
+.right { background:var(--yellow);}
+.bottom { background:var(--green); padding:20px;}
+.footer { background:var(--blue); padding:15px; display:flex; justify-content:center; gap:20px;}
+h2 { text-align:center; margin-bottom:15px;}
+label { font-size:13px; display:block; margin-top:8px;}
+input, select { width:100%; padding:6px 8px; border-radius:6px; border:1px solid #ccc; margin-top:4px;}
+button { padding:8px 12px; border:none; border-radius:6px; cursor:pointer; font-weight:500; margin-top:10px;}
+.btn-green { background:var(--success); color:white;}
+.btn-blue { background:var(--primary); color:white;}
+.btn-red { background:var(--danger); color:white;}
+.btn-dark { background:var(--dark); color:white;}
+button:hover { opacity:0.9;}
+table { width:100%; border-collapse:collapse; margin-top:10px;}
+th, td { padding:6px; font-size:12px; text-align:center; border:1px solid rgba(0,0,0,0.2);}
+thead { background:#ddd;}
+.cover-box { text-align:center; margin-top:10px;}
+.cover-box img { width:120px; height:160px; object-fit:cover; border-radius:8px; box-shadow:0 5px 15px rgba(0,0,0,0.3);}
+@media(max-width:1000px){.top{grid-template-columns:1fr 1fr;} }
+@media(max-width:768px){.top{grid-template-columns:1fr;}.footer{flex-direction:column;} }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="top">
+    <!-- TRANSAKSI -->
+    <div class="section left">
+      <h2>Traksaksi Peminjaman</h2>
+      <input type="hidden" id="editIndexTransaksi" />
+      <label>Kode Pinjam</label>
+      <input type="text" id="kode" />
+      <button class="btn-green" onclick="generateKode()">GENERATE</button>
+      <label>Tanggal Pinjam</label>
+      <input type="date" id="tglPinjam" />
+      <label>Nama Anggota</label>
+      <input type="text" id="nama" />
+      <label>Pilih Buku</label>
+      <select id="pilihBuku" onchange="pilihBukuDropdown()"></select>
+      <label>Tanggal Kembali</label>
+      <input type="date" id="tglKembali" onchange="hitungLama()" />
+      <label>Lama Pinjam (Hari)</label>
+      <input type="number" id="lama" readonly />
+      <label>Denda (Rp)</label>
+      <input type="number" id="denda" readonly />
+      <button class="btn-green" onclick="simpanTransaksi()">Pinjam</button>
+    </div>
+
+    <!-- DATA BUKU -->
+    <div class="section middle">
+      <h2>Data Buku</h2>
+      <input type="hidden" id="editIndexBuku" />
+      <label>ISBN</label>
+      <input type="text" id="isbn" oninput="cariBukuByISBN()" />
+      <label>Judul</label>
+      <input type="text" id="judul" />
+      <label>Penerbit</label>
+      <input type="text" id="penerbit" />
+      <label>Tahun</label>
+      <input type="number" id="tahun" />
+      <div class="cover-box">
+        <img id="coverPreview" src="" alt="Cover Buku" />
+      </div>
+      <button class="btn-green" onclick="tambahBuku()">ADD</button>
+      <button class="btn-red" onclick="hapusBuku()">DELETE</button>
+    </div>
+
+    <!-- TABEL BUKU -->
+    <div class="section right">
+      <h2>Tabel Data Buku</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ISBN</th>
+            <th>Judul</th>
+            <th>Penerbit</th>
+            <th>Tahun</th>
+          </tr>
+        </thead>
+        <tbody id="tabelBuku"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TABEL TRANSAKSI -->
+  <div class="bottom">
+    <h2>Data Peminjaman Buku</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Kode</th>
+          <th>Tgl Pinjam</th>
+          <th>Nama</th>
+          <th>Buku</th>
+          <th>Tgl Kembali</th>
+          <th>Lama</th>
+          <th>Denda</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="tabelTransaksi"></tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER BUTTON -->
+  <div class="footer">
+    <button class="btn-dark" onclick="simpanTransaksi()">Simpan</button>
+    <button class="btn-dark" onclick="resetForm()">Bersih</button>
+    <button class="btn-dark" onclick="ubahTransaksi()">Ubah</button>
+    <button class="btn-dark" onclick="hapusTransaksi()">Hapus</button>
+    <button class="btn-dark" onclick="window.close()">Keluar</button>
+  </div>
+</div>
+
+<script>
+// --- Data Buku ---
+let buku = [
+  { isbn:"1", judul:"matematika", penerbit:"Bentang", tahun:"2005", cover:"img/mtk.jpg" },
+  { isbn:"2", judul:"toefl hacks", penerbit:"Hasta Mitra", tahun:"1980", cover:"img/toefl.jpg" },
+  { isbn:"3", judul:"supernova", penerbit:"Gramedia", tahun:"2009", cover:"img/supernova.jpg" },
+  { isbn:"4", judul:"rindu", penerbit:"Mizan", tahun:"2004", cover:"img/rindu.jpg" },
+  { isbn:"5", judul:"perahu", penerbit:"Penerbit Elex", tahun:"2014", cover:"img/perahu.jpg" },
+  { isbn:"6", judul:"negeri", penerbit:"Bentang", tahun:"2013", cover:"img/negeri.jpg" },
+  { isbn:"7", judul:"dilan", penerbit:"Mizan", tahun:"2001", cover:"img/dilan.jpg" },
+  { isbn:"8", judul:"cantik", penerbit:"Penerbit G", tahun:"2015", cover:"img/cantik.jpg" },
+  { isbn:"9", judul:"bumi", penerbit:"KPG", tahun:"2002", cover:"img/bumi.jpg" },
+  { isbn:"10", judul:"buku", penerbit:"Bentang", tahun:"2009", cover:"img/buku.jpg" }
+];
+
+let transaksi = [];
+let selectedBukuIndex = null;
+let selectedTransaksiIndex = null;
+
+// --- Element DOM ---
+const isbnInput = document.getElementById("isbn");
+const judulInput = document.getElementById("judul");
+const penerbitInput = document.getElementById("penerbit");
+const tahunInput = document.getElementById("tahun");
+
+const kode = document.getElementById("kode");
+const tglPinjam = document.getElementById("tglPinjam");
+const nama = document.getElementById("nama");
+const pilihBuku = document.getElementById("pilihBuku");
+const tglKembali = document.getElementById("tglKembali");
+const lama = document.getElementById("lama");
+const denda = document.getElementById("denda");
+
+// --- Konfigurasi Denda ---
+const batasPinjam = 7; // hari
+const dendaPerHari = 2000; // Rp/hari keterlambatan
+
+// --- Fungsi Load Buku ---
+function loadBuku() {
+  const select = pilihBuku;
+  const tabel = document.getElementById("tabelBuku");
+  select.innerHTML = "";
+  tabel.innerHTML = "";
+  buku.forEach((b,i)=>{
+    select.innerHTML += `<option value="${i}">${b.judul}</option>`;
+    tabel.innerHTML += `<tr onclick="pilihBukuTabel(${i})" style="cursor:pointer;">
+      <td>${b.isbn}</td>
+      <td>${b.judul}</td>
+      <td>${b.penerbit}</td>
+      <td>${b.tahun}</td>
+    </tr>`;
+  });
+  document.getElementById("coverPreview").src = ""; // cover kosong saat load
+  resetFormBuku();
+}
+
+// --- Pilih Buku dari Dropdown ---
+function pilihBukuDropdown() {
+  const i = pilihBuku.value;
+  if(i !== ""){
+    selectedBukuIndex = i;
+    const b = buku[i];
+    isbnInput.value = b.isbn;
+    judulInput.value = b.judul;
+    penerbitInput.value = b.penerbit;
+    tahunInput.value = b.tahun;
+    previewCover();
+    hitungLama();
+  } else {
+    document.getElementById("coverPreview").src = "";
+  }
+}
+
+// --- Pilih Buku dari Tabel ---
+function pilihBukuTabel(i){
+  selectedBukuIndex = i;
+  const b = buku[i];
+  isbnInput.value = b.isbn;
+  judulInput.value = b.judul;
+  penerbitInput.value = b.penerbit;
+  tahunInput.value = b.tahun;
+  pilihBuku.value = i;
+  previewCover();
+  hitungLama();
+}
+
+// --- Preview Cover Buku ---
+function previewCover() {
+  const i = pilihBuku.value;
+  if(buku[i]) document.getElementById("coverPreview").src = buku[i].cover;
+  else document.getElementById("coverPreview").src = "";
+}
+
+// --- Cari Buku Berdasarkan ISBN ---
+function cariBukuByISBN(){
+  const isbn = isbnInput.value.trim();
+  const index = buku.findIndex(b => b.isbn === isbn);
+  if(index !== -1){
+    selectedBukuIndex = index;
+    const b = buku[index];
+    judulInput.value = b.judul;
+    penerbitInput.value = b.penerbit;
+    tahunInput.value = b.tahun;
+    pilihBuku.value = index;
+    previewCover();
+    hitungLama();
+  } else {
+    document.getElementById("coverPreview").src = ""; // kosong jika ISBN tidak valid
+  }
+}
+
+// --- Generate Kode Pinjam ---
+function generateKode() {
+  kode.value = "PJ-" + Math.floor(Math.random()*10000);
+}
+
+// --- Hitung Lama Pinjam dan Denda ---
+function hitungLama() {
+  let tglP = new Date(tglPinjam.value);
+  let tglK = new Date(tglKembali.value);
+  let diff = (tglK - tglP) / (1000*60*60*24);
+  lama.value = diff>0 ? diff : 0;
+
+  // Denda otomatis
+  if(diff > batasPinjam){
+    let terlambat = diff - batasPinjam;
+    denda.value = terlambat * dendaPerHari;
+  } else {
+    denda.value = 0;
+  }
+}
+
+// --- Simpan Transaksi ---
+function simpanTransaksi() {
+  if(!kode.value || !tglPinjam.value || !nama.value || pilihBuku.value==="") {
+    alert("Isi semua data transaksi!");
+    return;
+  }
+  if(selectedTransaksiIndex===null){
+    transaksi.push({ 
+      kode:kode.value, 
+      tglPinjam:tglPinjam.value, 
+      nama:nama.value, 
+      buku:buku[pilihBuku.value].judul, 
+      tglKembali:tglKembali.value, 
+      lama:lama.value, 
+      denda:denda.value 
+    });
+  } else {
+    transaksi[selectedTransaksiIndex] = { 
+      kode:kode.value, 
+      tglPinjam:tglPinjam.value, 
+      nama:nama.value, 
+      buku:buku[pilihBuku.value].judul, 
+      tglKembali:tglKembali.value, 
+      lama:lama.value, 
+      denda:denda.value 
+    };
+    selectedTransaksiIndex = null;
+  }
+  renderTransaksi();
+  resetForm();
+}
+
+// --- Render Tabel Transaksi ---
+function renderTransaksi() {
+  const tabelTransaksi = document.getElementById("tabelTransaksi");
+  tabelTransaksi.innerHTML = "";
+  transaksi.forEach((t,i)=>{
+    tabelTransaksi.innerHTML += `<tr>
+      <td>${t.kode}</td>
+      <td>${t.tglPinjam}</td>
+      <td>${t.nama}</td>
+      <td>${t.buku}</td>
+      <td>${t.tglKembali}</td>
+      <td>${t.lama}</td>
+      <td>${t.denda}</td>
+      <td>
+        <button onclick="editTransaksi(${i})">Edit</button>
+        <button onclick="hapusTransaksiIndex(${i})">Hapus</button>
+      </td>
+    </tr>`;
+  });
+}
+
+// --- Edit Transaksi ---
+function editTransaksi(i) {
+  selectedTransaksiIndex = i;
+  const t = transaksi[i];
+  kode.value = t.kode;
+  tglPinjam.value = t.tglPinjam;
+  nama.value = t.nama;
+  pilihBuku.value = buku.findIndex(b=>b.judul===t.buku);
+  previewCover();
+  tglKembali.value = t.tglKembali;
+  hitungLama();
+}
+
+// --- Hapus Transaksi ---
+function hapusTransaksiIndex(i) {
+  if(confirm("Hapus data transaksi ini?")){
+    transaksi.splice(i,1);
+    if(selectedTransaksiIndex===i) selectedTransaksiIndex=null;
+    renderTransaksi();
+    resetForm();
+  }
+}
+
+// --- Reset Form ---
+function resetForm() {
+  kode.value = "";
+  tglPinjam.value = "";
+  nama.value = "";
+  pilihBuku.value = "";
+  document.getElementById("coverPreview").src = ""; // kosongkan cover
+  tglKembali.value = "";
+  lama.value = "";
+  denda.value = "";
+  selectedTransaksiIndex=null;
+}
+
+// --- Tambah Buku ---
+function tambahBuku(){
+  const isbn=isbnInput.value.trim();
+  const judul=judulInput.value.trim();
+  const penerbit=penerbitInput.value.trim();
+  const tahun=tahunInput.value.trim();
+  if(!isbn || !judul || !penerbit || !tahun){ alert("Lengkapi semua data buku!"); return; }
+  if(selectedBukuIndex===null){
+    buku.push({isbn, judul, penerbit, tahun, cover:"https://picsum.photos/200/300?new"});
+  } else {
+    buku[selectedBukuIndex] = { isbn, judul, penerbit, tahun, cover:buku[selectedBukuIndex].cover };
+    selectedBukuIndex=null;
+  }
+  loadBuku();
+  resetFormBuku();
+}
+
+// --- Hapus Buku ---
+function hapusBuku(){
+  if(selectedBukuIndex===null){ alert("Pilih buku dari tabel untuk dihapus!"); return; }
+  if(confirm("Hapus buku ini?")){
+    buku.splice(selectedBukuIndex,1);
+    selectedBukuIndex=null;
+    loadBuku();
+    resetFormBuku();
+  }
+}
+
+// --- Reset Form Buku ---
+function resetFormBuku(){
+  isbnInput.value=""; judulInput.value=""; penerbitInput.value=""; tahunInput.value=""; selectedBukuIndex=null;
+}
+
+// --- Ubah Transaksi ---
+function ubahTransaksi(){
+  if(selectedTransaksiIndex===null){ alert("Pilih data transaksi untuk diubah."); return; }
+  simpanTransaksi();
+}
+
+// --- Inisialisasi ---
+loadBuku();
+renderTransaksi();
+</script>
+</body>
+</html>
